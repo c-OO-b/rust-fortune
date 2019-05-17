@@ -6,10 +6,13 @@ use std::env;
 
 const QUOTE_MIN: usize = 150;
 const QUOTE_MAX: usize = 400;
-const USAGE: &str ="Available commands:
-  -h                        This screen right here.
-  -o <short,medium,long>    Show short,medium or long quotes only.
+const USAGE: &str ="
+Available commands:
+-h                            This screen right here.
+-o <short,medium,long>        Show short,medium or long quotes only.
+-c <red, blue, green, etc>    Add some color. Use after -o command.
 ";
+
 #[derive(Debug)]
 enum QuoteSize {
     Short,
@@ -17,17 +20,33 @@ enum QuoteSize {
     Long,
     Default,
 }
+#[derive(Debug)]
+enum QuoteColor {
+    Red,
+    Green,
+    Yellow,
+    Blue,
+    Magenta,
+    Cyan,
+    None,
+}
 
 #[derive(Debug)]
 struct Quote<'a> {
     quote: String,
     data: Vec<&'a str>,
     size: QuoteSize,
+    color: QuoteColor,
 }
 
 impl<'a> Quote<'a> {
     fn init(data: Vec<&'a str>) -> Quote<'a> {
-        Quote { quote: "None".to_string(), data: data, size: QuoteSize::Default }
+        Quote { 
+            quote: "None".to_string(), 
+            data: data, 
+            size: QuoteSize::Default,
+            color: QuoteColor::None
+        }
     }
 
     fn size(&mut self) {
@@ -63,21 +82,38 @@ impl<'a> Quote<'a> {
         }
 
         let mut r_thread = rand::thread_rng();
-        let random = r_thread.gen_range(0, self.data.len());
+        let random = r_thread.gen_range(0, tmp.len() - 1);
         self.quote = tmp[random].to_string();
     }
 
-    fn get(&mut self) {
-        self.size();
-        println!("{}", self.quote);
+    fn color(&mut self) -> Option<String> {
+        let end = "\x1b[0m";
+        let color = match self.color {
+            QuoteColor::Red => Some("\x1B[31m".to_string() + &self.quote + end),
+            QuoteColor::Green => Some("\x1B[32m".to_string() + &self.quote + end),
+            QuoteColor::Yellow => Some("\x1B[33m".to_string() + &self.quote + end),
+            QuoteColor::Blue => Some("\x1B[34m".to_string() + &self.quote + end),
+            QuoteColor::Magenta => Some("\x1B[35m".to_string() + &self.quote + end),
+            QuoteColor::Cyan => Some("\x1B[36m".to_string() + &self.quote + end),
+            QuoteColor::None => None,
+        };
+
+        color
     }
-    
-    // TODO: Implement Colors.
-    // fn color(x: String) -> String {
-    //     let start = "\x1B[31m".to_string();
-    //     let end = "\x1B[0m".to_string();
-    //     start + &x + &end
-    // }
+
+    fn get(&mut self) {
+        &self.size();
+
+        match &self.color() {
+            Some(v) => {
+                println!("{}", v.to_string());
+            },
+            None => {
+                println!("{}", self.quote)
+            }
+        };
+
+    }
 }
 
 fn main() {
@@ -109,12 +145,34 @@ fn main() {
                     }
                 }
             }
-            "-m" | "--m" => {
-                unimplemented!();
+            _ => {
+                println!("No such command.");
+                process::exit(1);
             }
-            _ => println!("No such command.")
         }
     }
+
+    if args.len() > 3 {
+        match args[3].to_lowercase().as_str() {
+            "-c" | "--c" => {
+                if args.len() > 4 {
+                   match args[4].to_lowercase().as_str() {
+                        "red" => quotes.color = QuoteColor::Red,
+                        "green" => quotes.color = QuoteColor::Green,
+                        "yellow" => quotes.color = QuoteColor::Yellow,
+                        "blue" => quotes.color = QuoteColor::Blue,
+                        "magenta" => quotes.color = QuoteColor::Magenta,
+                        "cyan" => quotes.color = QuoteColor::Cyan,
+                        _ => quotes.color = QuoteColor::None,
+                    } 
+                }
+            }
+            _ => {
+                println!("None")
+            }
+        }
+    }
+    
     quotes.get();
 }
 
