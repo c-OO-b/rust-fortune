@@ -89,7 +89,7 @@ impl<'a> Quote<'a> {
 
     fn color(&mut self) -> Option<String> {
         let end = "\x1b[0m";
-        let color = match self.color {
+        match self.color {
             QuoteColor::Red => Some("\x1B[31m".to_string() + &self.quote + end),
             QuoteColor::Green => Some("\x1B[32m".to_string() + &self.quote + end),
             QuoteColor::Yellow => Some("\x1B[33m".to_string() + &self.quote + end),
@@ -97,13 +97,11 @@ impl<'a> Quote<'a> {
             QuoteColor::Magenta => Some("\x1B[35m".to_string() + &self.quote + end),
             QuoteColor::Cyan => Some("\x1B[36m".to_string() + &self.quote + end),
             QuoteColor::None => None,
-        };
-
-        color
+        }
     }
 
     fn get(&mut self) {
-        &self.size();
+        self.size();
 
         match &self.color() {
             Some(v) => {
