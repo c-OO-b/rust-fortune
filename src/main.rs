@@ -1,5 +1,4 @@
 use std::fs;
-use std::io;
 use std::path::Path;
 use rand::Rng;
 use std::process;
@@ -7,12 +6,11 @@ use std::env;
 
 const QUOTE_MIN: usize = 150;
 const QUOTE_MAX: usize = 400;
-const USAGE: &str ="
-Available commands:
+const USAGE: &str ="Available commands:
   -h                        This screen right here.
   -o <short,medium,long>    Show short,medium or long quotes only.
 ";
-
+#[derive(Debug)]
 enum QuoteSize {
     Short,
     Medium,
@@ -20,7 +18,73 @@ enum QuoteSize {
     Default,
 }
 
-fn main() -> io::Result<()> {
+#[derive(Debug)]
+struct Quote<'a> {
+    quote: String,
+    data: Vec<&'a str>,
+    size: QuoteSize,
+}
+
+impl<'a> Quote<'a> {
+    fn init(data: Vec<&'a str>) -> Quote<'a> {
+        Quote { quote: "None".to_string(), data: data, size: QuoteSize::Default }
+    }
+
+    fn size(&mut self) {
+        let mut tmp = vec![];
+
+        match &self.size {
+            QuoteSize::Short => {
+                for q in &self.data {
+                    if q.len() <= QUOTE_MIN {
+                        tmp.push(q);
+                    }
+                }
+            }
+            QuoteSize::Medium => {
+                for q in &self.data {
+                    if q.len() > QUOTE_MIN && q.len() < QUOTE_MAX {
+                        tmp.push(q)
+                    }
+                }
+            }
+            QuoteSize::Long => {
+                for q in &self.data {
+                    if q.len() >= QUOTE_MAX {
+                        tmp.push(q);
+                    }
+                }
+            }
+            _ => {
+                for q in &self.data {
+                    tmp.push(q)
+                }
+            }
+        }
+
+        let mut r_thread = rand::thread_rng();
+        let random = r_thread.gen_range(0, self.data.len());
+        self.quote = tmp[random].to_string();
+    }
+
+    fn get(&mut self) {
+        self.size();
+        println!("{}", self.quote);
+    }
+    
+    // TODO: Implement Colors.
+    // fn color(x: String) -> String {
+    //     let start = "\x1B[31m".to_string();
+    //     let end = "\x1B[0m".to_string();
+    //     start + &x + &end
+    // }
+}
+
+fn main() {
+    let file = read_file().unwrap().to_owned();
+    let data: Vec<&str> = file.split("\n%\n").collect();
+    let mut quotes = Quote::init(data);
+
     let args: Vec<String> = env::args().collect();
 
     if args.len() > 1 {
@@ -32,9 +96,15 @@ fn main() -> io::Result<()> {
             "-o" | "--o" => {
                 if args.len() > 2 {
                     match args[2].to_lowercase().as_str() {
-                        "short" => get_quote(QuoteSize::Short),
-                        "medium" => get_quote(QuoteSize::Medium),
-                        "long" => get_quote(QuoteSize::Long),
+                        "short" => {
+                            quotes.size = QuoteSize::Short
+                            },
+                        "medium" => {
+                            quotes.size = QuoteSize::Medium
+                            },
+                        "long" => {
+                            quotes.size = QuoteSize::Long
+                            },
                         _ => println!("Use short, medium or long.")
                     }
                 }
@@ -44,61 +114,9 @@ fn main() -> io::Result<()> {
             }
             _ => println!("No such command.")
         }
-    } 
-    else {
-        get_quote(QuoteSize::Default);
     }
-    
-    Ok(())
+    quotes.get();
 }
-
-fn get_quote(arg: QuoteSize) {
-    let file = read_file().unwrap();
-    let quotes: Vec<&str> = file.split("\n%\n").collect();
-    let mut tmp = vec![];
-
-    match arg {
-        QuoteSize::Short => {
-            for q in &quotes {
-                if q.len() <= QUOTE_MIN {
-                    tmp.push(q)
-                }
-            }
-        }
-        QuoteSize::Medium => {
-            for q in &quotes {
-                if q.len() > QUOTE_MIN && q.len() < QUOTE_MAX {
-                    tmp.push(q)
-                }
-            }
-        }
-        QuoteSize::Long => {
-            for q in &quotes {
-                if q.len() >= QUOTE_MAX {
-                    tmp.push(q)
-                }
-            }
-        }
-        _ => {
-            for q in &quotes {
-                tmp.push(q)
-            }
-        }
-    }
-    println!("{}", tmp[random(tmp.len())])
-}
-
-fn random(i: usize) -> usize {
-    let mut r_thread = rand::thread_rng();
-    r_thread.gen_range(0, i)
-}
-
-// TODO: Implement Colors.
-// fn color(x: String) -> String {
-//     let start = "\x1B[31m".to_string();
-//     let end = "\x1B[0m".to_string();
-//     start + &x + &end
-// }
 
 fn read_file() -> Result<String, &'static str> {
     let quotebase = match directory("fortunes") {
