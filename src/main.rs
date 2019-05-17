@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::Path;
-use rand::Rng;
+use rand::{Rand, Rng};
 use std::process;
 use std::env;
 
@@ -29,7 +29,20 @@ enum QuoteColor {
     Blue,
     Magenta,
     Cyan,
+    Rainbow,
     None,
+}
+impl Rand for QuoteColor {
+    fn rand<R: Rng>(rng: &mut R) -> Self {
+        match rng.gen_range(0, 5) {
+            0 => QuoteColor::Red,
+            1 => QuoteColor::Green,
+            2 => QuoteColor::Yellow,
+            3 => QuoteColor::Blue,
+            4 => QuoteColor::Magenta,
+            _ => QuoteColor::Cyan,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -96,8 +109,67 @@ impl<'a> Quote<'a> {
             QuoteColor::Blue => Some("\x1B[34m".to_string() + &self.quote + end),
             QuoteColor::Magenta => Some("\x1B[35m".to_string() + &self.quote + end),
             QuoteColor::Cyan => Some("\x1B[36m".to_string() + &self.quote + end),
+            QuoteColor::Rainbow => Some(self.rainbow()),
             QuoteColor::None => None,
         }
+    }
+
+// Use the random trait implemented for QuoteColor and generate random colors on every character.
+// Implement this in the future in a better way.
+//
+    fn rainbow(&mut self) -> String {
+        let mut temp = String::new();
+        let end = "\x1b[0m";
+        let mut r_thread = rand::thread_rng();
+
+        for q in self.quote.chars() {
+            let random_color: QuoteColor = r_thread.gen();
+            self.color = random_color;
+            
+            match self.color {
+                QuoteColor::Red => {
+                    temp.push_str("\x1B[31m");
+                    temp.push(q);
+                    temp.push_str(end);
+                },
+                QuoteColor::Green => {
+                    temp.push_str("\x1B[32m");
+                    temp.push(q);
+                    temp.push_str(end);
+                },
+                QuoteColor::Yellow => {
+                    temp.push_str("\x1B[33m");
+                    temp.push(q);
+                    temp.push_str(end);
+                },
+                QuoteColor::Blue => {
+                    temp.push_str("\x1B[34m");
+                    temp.push(q);
+                    temp.push_str(end);
+                },
+                QuoteColor::Magenta => {
+                    temp.push_str("\x1B[35m");
+                    temp.push(q);
+                    temp.push_str(end);
+                },
+                QuoteColor::Cyan => {
+                    temp.push_str("\x1B[36m");
+                    temp.push(q);
+                    temp.push_str(end);
+                },
+                QuoteColor::Rainbow => {
+                    temp.push_str("\x1B[37m");
+                    temp.push(q);
+                    temp.push_str(end);
+                },
+                QuoteColor::None => {
+                    temp.push_str("\x1B[31m");
+                    temp.push(q);
+                    temp.push_str(end);
+                },
+            };
+        }
+        temp
     }
 
     fn get(&mut self) {
@@ -105,13 +177,12 @@ impl<'a> Quote<'a> {
 
         match &self.color() {
             Some(v) => {
-                println!("{}", v.to_string());
+                println!("{}", v.to_string())
             },
             None => {
                 println!("{}", self.quote)
             }
-        };
-
+        }
     }
 }
 
@@ -162,6 +233,7 @@ fn main() {
                         "blue" => quotes.color = QuoteColor::Blue,
                         "magenta" => quotes.color = QuoteColor::Magenta,
                         "cyan" => quotes.color = QuoteColor::Cyan,
+                        "rainbow" => quotes.color = QuoteColor::Rainbow,
                         _ => quotes.color = QuoteColor::None,
                     } 
                 }
