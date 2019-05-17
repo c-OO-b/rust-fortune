@@ -20,6 +20,7 @@ enum QuoteSize {
     Long,
     Default,
 }
+
 #[derive(Debug)]
 enum QuoteColor {
     Red,
@@ -172,7 +173,7 @@ fn main() {
             }
         }
     }
-    
+
     quotes.get();
 }
 
