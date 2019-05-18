@@ -29,20 +29,7 @@ enum QuoteColor {
     Blue,
     Magenta,
     Cyan,
-    Rainbow,
     None,
-}
-impl Rand for QuoteColor {
-    fn rand<R: Rng>(rng: &mut R) -> Self {
-        match rng.gen_range(0, 5) {
-            0 => QuoteColor::Red,
-            1 => QuoteColor::Green,
-            2 => QuoteColor::Yellow,
-            3 => QuoteColor::Blue,
-            4 => QuoteColor::Magenta,
-            _ => QuoteColor::Cyan,
-        }
-    }
 }
 
 #[derive(Debug)]
@@ -54,16 +41,17 @@ struct Quote<'a> {
 }
 
 impl<'a> Quote<'a> {
+// Initialize the structure with some default values.
     fn init(data: Vec<&'a str>) -> Quote<'a> {
         Quote { 
-            quote: "None".to_string(), 
+            quote: String::new(), 
             data: data, 
             size: QuoteSize::Default,
             color: QuoteColor::None
         }
     }
-
-    fn size(&mut self) {
+// Lets check how big of a quote we are gonna grab, randomize and update it.
+    fn get_quote(&mut self) {
         let mut tmp = vec![];
 
         match &self.size {
@@ -97,9 +85,11 @@ impl<'a> Quote<'a> {
 
         let mut r_thread = rand::thread_rng();
         let random = r_thread.gen_range(0, tmp.len() - 1);
+
         self.quote = tmp[random].to_string();
     }
-
+// Check what color options have been selected, and generate the String with color codes.
+// I use Option<String> for easy checking if we use colors or not later.
     fn color(&mut self) -> Option<String> {
         let end = "\x1b[0m";
         match self.color {
@@ -109,71 +99,12 @@ impl<'a> Quote<'a> {
             QuoteColor::Blue => Some("\x1B[34m".to_string() + &self.quote + end),
             QuoteColor::Magenta => Some("\x1B[35m".to_string() + &self.quote + end),
             QuoteColor::Cyan => Some("\x1B[36m".to_string() + &self.quote + end),
-            QuoteColor::Rainbow => Some(self.rainbow()),
             QuoteColor::None => None,
         }
     }
-
-// Use the random trait implemented for QuoteColor and generate random colors on every character.
-// Implement this in the future in a better way.
-//
-    fn rainbow(&mut self) -> String {
-        let mut temp = String::new();
-        let end = "\x1b[0m";
-        let mut r_thread = rand::thread_rng();
-
-        for q in self.quote.chars() {
-            let random_color: QuoteColor = r_thread.gen();
-            self.color = random_color;
-            
-            match self.color {
-                QuoteColor::Red => {
-                    temp.push_str("\x1B[31m");
-                    temp.push(q);
-                    temp.push_str(end);
-                },
-                QuoteColor::Green => {
-                    temp.push_str("\x1B[32m");
-                    temp.push(q);
-                    temp.push_str(end);
-                },
-                QuoteColor::Yellow => {
-                    temp.push_str("\x1B[33m");
-                    temp.push(q);
-                    temp.push_str(end);
-                },
-                QuoteColor::Blue => {
-                    temp.push_str("\x1B[34m");
-                    temp.push(q);
-                    temp.push_str(end);
-                },
-                QuoteColor::Magenta => {
-                    temp.push_str("\x1B[35m");
-                    temp.push(q);
-                    temp.push_str(end);
-                },
-                QuoteColor::Cyan => {
-                    temp.push_str("\x1B[36m");
-                    temp.push(q);
-                    temp.push_str(end);
-                },
-                QuoteColor::Rainbow => {
-                    temp.push_str("\x1B[37m");
-                    temp.push(q);
-                    temp.push_str(end);
-                },
-                QuoteColor::None => {
-                    temp.push_str("\x1B[31m");
-                    temp.push(q);
-                    temp.push_str(end);
-                },
-            };
-        }
-        temp
-    }
-
-    fn get(&mut self) {
-        self.size();
+// Initialize get_quote and check if color have been selected and print to screen.
+    fn print(&mut self) {
+        self.get_quote();
 
         match &self.color() {
             Some(v) => {
@@ -233,7 +164,6 @@ fn main() {
                         "blue" => quotes.color = QuoteColor::Blue,
                         "magenta" => quotes.color = QuoteColor::Magenta,
                         "cyan" => quotes.color = QuoteColor::Cyan,
-                        "rainbow" => quotes.color = QuoteColor::Rainbow,
                         _ => quotes.color = QuoteColor::None,
                     } 
                 }
@@ -244,7 +174,7 @@ fn main() {
         }
     }
 
-    quotes.get();
+    quotes.print();
 }
 
 fn read_file() -> Result<String, &'static str> {
