@@ -1,7 +1,6 @@
 use std::fs;
 use std::fs::OpenOptions;
-use std::io;
-use std::io::prelude::*;
+use std::io::{self, Write};
 use std::path::Path;
 use rand::{Rng};
 use std::process;
@@ -121,7 +120,7 @@ impl<'a> Quote<'a> {
         }
     }
 }
-
+// read data from file
 fn read_file() -> Result<String, &'static str> {
     let quotebase = match directory(FILENAME) {
         Ok(n) => n,
@@ -159,8 +158,7 @@ fn write_file() {
         Ok(mut v) => {
             if data.trim().is_empty() {
                 println!("No data to write.");
-            } 
-            else {
+            } else {
                 writeln!(v, "{}\n%", data.trim()).expect("Could not write to file.");
                 println!("Written quote!");
             }
@@ -172,7 +170,8 @@ fn write_file() {
 
     process::exit(1);
 }
-
+// Find the executables directory, this is needed because otherwise if you create a symlink
+// to the binary the program might not find the datafile.
 fn directory<F: AsRef<Path>>(file: F) -> Result<std::path::PathBuf, &'static str> {
     let exe_path = match std::env::current_exe() {
         Ok(f) => f,
