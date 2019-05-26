@@ -156,7 +156,7 @@ fn write_file() {
         
         match input.as_ref() {
             ":save" => {
-                data.push_str(&input);
+                data.push_str(&tmp);
                 break;
             }
             ":exit" => {
