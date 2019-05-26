@@ -1,5 +1,5 @@
 use std::fs::{self, OpenOptions};
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 use std::path::Path;
 use rand::Rng;
 use std::process;
@@ -144,8 +144,30 @@ fn write_file() {
     let file = directory(FILENAME).unwrap();
     let mut data = String::new();
     
-    println!("Write a quote: ");
-    io::stdin().read_line(&mut data).expect("Error");
+    println!("Write a fortune to the file,
+    use :save on a new line to write,
+    use :exit on a new line to cancel.\n");
+    println!("Input Text: ");
+
+    let mut tmp = String::new();
+
+    for line in io::stdin().lock().lines() {
+        let input = line.unwrap();
+        
+        match input.as_ref() {
+            ":save" => {
+                data.push_str(&input);
+                break;
+            }
+            ":exit" => {
+                break;
+            }
+            _ => {
+                tmp.push_str(&input);
+                tmp.push_str("\n");
+            }
+        }
+    }
 
     let buffer = OpenOptions::new()
                 .read(true)
@@ -155,10 +177,10 @@ fn write_file() {
 
     match buffer {
         Ok(mut v) => {
-            if data.trim().is_empty() {
+            if data.is_empty() {
                 println!("No data to write.");
             } else {
-                writeln!(v, "{}\n%", data.trim()).expect("Could not write to file.");
+                writeln!(v, "{}%", data).expect("Could not write to file.");
                 println!("Written quote!");
             }
         }
