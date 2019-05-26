@@ -1,16 +1,21 @@
 use std::fs;
+use std::fs::OpenOptions;
+use std::io;
+use std::io::prelude::*;
 use std::path::Path;
-use rand::{Rand, Rng};
+use rand::{Rng};
 use std::process;
 use std::env;
 
+const FILENAME: &str = "fortunes";
 const QUOTE_MIN: usize = 150;
 const QUOTE_MAX: usize = 400;
 const USAGE: &str ="
 Available commands:
--h                            This screen right here.
--o <short,medium,long>        Show short,medium or long quotes only.
--c <red, blue, green, etc>    Add some color. Use after -o command.
+-help                             This screen right here.
+-size  <short,medium,long>        Show short,medium or long quotes only.
+-color <red, blue, green, etc>    Add some color. Use after -o command.
+-write <quote>                    Write a Quote to the file.
 ";
 
 #[derive(Debug)]
@@ -117,68 +122,8 @@ impl<'a> Quote<'a> {
     }
 }
 
-fn main() {
-    let file = read_file().unwrap().to_owned();
-    let data: Vec<&str> = file.split("\n%\n").collect();
-    let mut quotes = Quote::init(data);
-
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() > 1 {
-        match args[1].to_lowercase().as_str() {
-            "-h" | "--h" => {
-                println!("{}", USAGE);
-                process::exit(1);
-            }
-            "-o" | "--o" => {
-                if args.len() > 2 {
-                    match args[2].to_lowercase().as_str() {
-                        "short" => {
-                            quotes.size = QuoteSize::Short
-                            },
-                        "medium" => {
-                            quotes.size = QuoteSize::Medium
-                            },
-                        "long" => {
-                            quotes.size = QuoteSize::Long
-                            },
-                        _ => println!("Use short, medium or long.")
-                    }
-                }
-            }
-            _ => {
-                println!("No such command.");
-                process::exit(1);
-            }
-        }
-    }
-
-    if args.len() > 3 {
-        match args[3].to_lowercase().as_str() {
-            "-c" | "--c" => {
-                if args.len() > 4 {
-                   match args[4].to_lowercase().as_str() {
-                        "red" => quotes.color = QuoteColor::Red,
-                        "green" => quotes.color = QuoteColor::Green,
-                        "yellow" => quotes.color = QuoteColor::Yellow,
-                        "blue" => quotes.color = QuoteColor::Blue,
-                        "magenta" => quotes.color = QuoteColor::Magenta,
-                        "cyan" => quotes.color = QuoteColor::Cyan,
-                        _ => quotes.color = QuoteColor::None,
-                    } 
-                }
-            }
-            _ => {
-                println!("None")
-            }
-        }
-    }
-
-    quotes.print();
-}
-
 fn read_file() -> Result<String, &'static str> {
-    let quotebase = match directory("fortunes") {
+    let quotebase = match directory(FILENAME) {
         Ok(n) => n,
         Err(err) => {
             eprintln!("Error finding file: {}", err);
@@ -195,6 +140,37 @@ fn read_file() -> Result<String, &'static str> {
     };
 
     Ok(file)
+}
+// Appending a new quote to the end of file from user input.
+fn write_file() {
+    let file = directory(FILENAME).unwrap();
+    let mut data = String::new();
+    
+    println!("Write a quote: ");
+    io::stdin().read_line(&mut data).expect("Error");
+
+    let buffer = OpenOptions::new()
+                .read(true)
+                .write(true)
+                .append(true)
+                .open(file);
+
+    match buffer {
+        Ok(mut v) => {
+            if data.trim().is_empty() {
+                println!("No data to write.");
+            } 
+            else {
+                writeln!(v, "{}\n%", data.trim()).expect("Could not write to file.");
+                println!("Written quote!");
+            }
+        }
+        Err(e) => {
+            eprintln!("Could not open file {}", e)
+        }
+    }
+
+    process::exit(1);
 }
 
 fn directory<F: AsRef<Path>>(file: F) -> Result<std::path::PathBuf, &'static str> {
@@ -215,4 +191,67 @@ fn directory<F: AsRef<Path>>(file: F) -> Result<std::path::PathBuf, &'static str
     } else {
         Err("Path not found.")
     }
+}
+
+fn main() {
+    let file = read_file().unwrap().to_owned();
+    let data: Vec<&str> = file.split("\n%\n").collect();
+    let mut quotes = Quote::init(data);
+
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() > 1 {
+        match args[1].to_lowercase().as_str() {
+            "-help" => {
+                println!("{}", USAGE);
+                process::exit(1);
+            }
+            "-size" => {
+                if args.len() > 2 {
+                    match args[2].to_lowercase().as_str() {
+                        "short" => {
+                            quotes.size = QuoteSize::Short
+                            },
+                        "medium" => {
+                            quotes.size = QuoteSize::Medium
+                            },
+                        "long" => {
+                            quotes.size = QuoteSize::Long
+                            },
+                        _ => println!("Use short, medium or long.")
+                    }
+                }
+            }
+            "-write" => {
+                write_file();
+            }
+            _ => {
+                println!("No such command.");
+                process::exit(1);
+            }
+        }
+    }
+
+    if args.len() > 3 {
+        match args[3].to_lowercase().as_str() {
+            "-color" => {
+                if args.len() > 4 {
+                   match args[4].to_lowercase().as_str() {
+                        "red" => quotes.color = QuoteColor::Red,
+                        "green" => quotes.color = QuoteColor::Green,
+                        "yellow" => quotes.color = QuoteColor::Yellow,
+                        "blue" => quotes.color = QuoteColor::Blue,
+                        "magenta" => quotes.color = QuoteColor::Magenta,
+                        "cyan" => quotes.color = QuoteColor::Cyan,
+                        _ => quotes.color = QuoteColor::None,
+                    } 
+                }
+            }
+            _ => {
+                println!("None")
+            }
+        }
+    }
+
+    quotes.print();
 }
