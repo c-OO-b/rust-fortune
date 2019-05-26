@@ -1,8 +1,7 @@
-use std::fs;
-use std::fs::OpenOptions;
+use std::fs::{self, OpenOptions};
 use std::io::{self, Write};
 use std::path::Path;
-use rand::{Rng};
+use rand::Rng;
 use std::process;
 use std::env;
 
